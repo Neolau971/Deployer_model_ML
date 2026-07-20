@@ -19,7 +19,7 @@ from sklearn.inspection import permutation_importance
 import shap
 
 
-def load_data(path="dataCentral.csv"):
+def load_data(path="data/dataCentral.csv"):
     return pd.read_csv(path)
 
 
