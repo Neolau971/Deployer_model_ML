@@ -5,6 +5,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_predict, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, precision_recall_curve, average_precision_score
+from pydantic import ValidationError
+
+from model.schemas.employee import EmployeeInput
 
 model = FastAPI()
 
@@ -13,9 +16,28 @@ TARGET_COL = "a_quitte_l_entreprise"
 def load_data_from_upload(file: UploadFile):
     try:
         content = file.file.read().decode("utf-8")
-        return pd.read_csv(StringIO(content))
+        df = pd.read_csv(StringIO(content))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erreur de lecture CSV: {str(e)}")
+
+    errors = []
+    valid_rows = []
+
+    for idx, row in df.iterrows():
+        try:
+            item = EmployeeInput.model_validate(row.to_dict())
+            valid_rows.append(item.model_dump())
+        except ValidationError as e:
+            errors.append({
+                "row": int(idx),
+                "errors": e.errors()
+            })
+
+    if errors:
+        raise HTTPException(status_code=422, detail=errors)
+
+    return pd.DataFrame(valid_rows)
+
 
 def train_and_evaluate(data: pd.DataFrame):
     if TARGET_COL not in data.columns:
