@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, precision_recall_curve, average_precision_score
 from pydantic import ValidationError
 
+from db import save_dataframe_to_db
+
 from model.schemas.employee import EmployeeInput
 
 model = FastAPI()
@@ -103,5 +105,6 @@ def train_and_evaluate(data: pd.DataFrame):
 @model.post("/predict")
 async def predict(file: UploadFile = File(...)):
     data = load_data_from_upload(file)
+    save_dataframe_to_db(data)
     results = train_and_evaluate(data)
     return JSONResponse(content=results)
