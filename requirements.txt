@@ -11,3 +11,4 @@ httpx2==2.7.0
 psycopg==3.3.4
 psycopg-binary==3.3.4
 SQLAlchemy==2.0.51
+joblib==1.5.3

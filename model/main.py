@@ -1,19 +1,34 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from contextlib import asynccontextmanager
+from pathlib import Path
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse
 from io import StringIO
 import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_predict, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix, precision_recall_curve, average_precision_score
+import joblib
 from pydantic import ValidationError
 
 from db import save_dataframe_to_db
-
 from model.schemas.employee import EmployeeInput
 
-model = FastAPI()
-
 TARGET_COL = "a_quitte_l_entreprise"
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "model.joblib"
+FEATURE_COLUMNS_PATH = BASE_DIR / "feature_columns.joblib"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if MODEL_PATH.exists() and FEATURE_COLUMNS_PATH.exists():
+        app.state.model = joblib.load(MODEL_PATH)
+        app.state.feature_columns = joblib.load(FEATURE_COLUMNS_PATH)
+    else:
+        app.state.model = None
+        app.state.feature_columns = None
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
 
 def load_data_from_upload(file: UploadFile):
     try:
@@ -41,70 +56,32 @@ def load_data_from_upload(file: UploadFile):
     return pd.DataFrame(valid_rows)
 
 
-def train_and_evaluate(data: pd.DataFrame):
-    if TARGET_COL not in data.columns:
-        raise HTTPException(status_code=400, detail=f"Colonne cible '{TARGET_COL}' absente.")
+def predict_with_model(request: Request, data: pd.DataFrame):
+    model = request.app.state.model
+    feature_columns = request.app.state.feature_columns
 
-    X = data.drop(columns=[TARGET_COL])
-    y = data[TARGET_COL]
+    if model is None or feature_columns is None:
+        raise HTTPException(status_code=500, detail="Modèle non chargé")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+    if TARGET_COL in data.columns:
+        X = data.drop(columns=[TARGET_COL])
+    else:
+        X = data
 
-    base_model = RandomForestClassifier(
-        random_state=42,
-        n_jobs=-1,
-        class_weight="balanced"
-    )
+    X = pd.get_dummies(X)
+    X = X.reindex(columns=feature_columns, fill_value=0)
 
-    param_grid = {
-        "n_estimators": [200],
-        "max_depth": [10],
-        "min_samples_leaf": [10]
-    }
-
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-    grid = GridSearchCV(
-        estimator=base_model,
-        param_grid=param_grid,
-        cv=cv,
-        scoring="f1",
-        verbose=0,
-        n_jobs=-1
-    )
-
-    grid.fit(X_train, y_train)
-    best_model = grid.best_estimator_
-
-    y_proba_test = best_model.predict_proba(X_test)[:, 1]
-    y_pred_test = (y_proba_test >= 0.5).astype(int)
-
-    report = classification_report(y_test, y_pred_test, output_dict=True)
-    cm = confusion_matrix(y_test, y_pred_test).tolist()
-    precision_cv, recall_cv, _ = precision_recall_curve(y_train, cross_val_predict(
-        best_model, X_train, y_train, cv=cv, method="predict_proba", n_jobs=-1
-    )[:, 1])
-    ap_cv = average_precision_score(y_train, cross_val_predict(
-        best_model, X_train, y_train, cv=cv, method="predict_proba", n_jobs=-1
-    )[:, 1])
+    y_proba = model.predict_proba(X)[:, 1]
+    y_pred = (y_proba >= 0.5).astype(int)
 
     return {
-        "best_params": grid.best_params_,
-        "best_cv_score": grid.best_score_,
-        "confusion_matrix": cm,
-        "classification_report": report,
-        "average_precision_cv": ap_cv,
-        "n_rows": len(data),
-        "n_features": X.shape[1],
-        "predictions": y_pred_test.tolist(),
-        "probabilities": y_proba_test.tolist(),
+        "predictions": y_pred.tolist()
     }
 
-@model.post("/predict")
-async def predict(file: UploadFile = File(...)):
+
+@app.post("/predict")
+async def predict(request: Request, file: UploadFile = File(...)):
     data = load_data_from_upload(file)
     save_dataframe_to_db(data)
-    results = train_and_evaluate(data)
+    results = predict_with_model(request, data)
     return JSONResponse(content=results)

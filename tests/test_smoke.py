@@ -35,15 +35,13 @@ def test_expected_columns_present():
     }
     assert expected.issubset(df.columns)
 
+def test_no_missing_target():
+    upload = make_upload_file()
+    df = load_data_from_upload(upload)
+    assert df["a_quitte_l_entreprise"].notna().all()
 
 def test_target_is_binary():
     upload = make_upload_file()
     df = load_data_from_upload(upload)
     values = set(df["a_quitte_l_entreprise"].dropna().unique())
     assert values.issubset({0, 1})
-
-
-def test_no_missing_target():
-    upload = make_upload_file()
-    df = load_data_from_upload(upload)
-    assert df["a_quitte_l_entreprise"].notna().all()
