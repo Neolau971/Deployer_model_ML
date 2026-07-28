@@ -2,7 +2,7 @@
 
 ## À propos
 
-[Courte description à propos de pourquoi le projet existe]
+Ce projet a pour objectif de déployer un modèle de classification pour prévoir les démissions
 
 ## Table des matières
 
