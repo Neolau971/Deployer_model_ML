@@ -7,7 +7,8 @@ import pandas as pd
 import joblib
 from pydantic import ValidationError
 
-from db import save_dataframe_to_db
+from db.createDB import ensure_database
+from db.createTable import save_dataframe_to_db
 from model.schemas.employee import EmployeeInput
 
 TARGET_COL = "a_quitte_l_entreprise"
@@ -82,6 +83,7 @@ def predict_with_model(request: Request, data: pd.DataFrame):
 @app.post("/predict")
 async def predict(request: Request, file: UploadFile = File(...)):
     data = load_data_from_upload(file)
+    ensure_database()
     save_dataframe_to_db(data)
     results = predict_with_model(request, data)
     return JSONResponse(content=results)

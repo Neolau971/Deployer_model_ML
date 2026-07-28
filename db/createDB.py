@@ -27,13 +27,3 @@ def ensure_database():
         if not exists:
             cur.execute(f'CREATE DATABASE "{DB_NAME}"')
     conn.close()
-
-def get_engine():
-    return create_engine(
-        f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
-
-def save_dataframe_to_db(df: pd.DataFrame) -> None:
-    ensure_database()
-    engine = get_engine()
-    df.to_sql(TABLE_NAME, con=engine, if_exists="append", index=False, chunksize=1000)
