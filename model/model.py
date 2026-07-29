@@ -29,9 +29,9 @@ base_model = RandomForestClassifier(
 )
 
 param_grid = {
-    "n_estimators": [200],
-    "max_depth": [10],
-    "min_samples_leaf": [10]
+    "n_estimators": [None, 200, 500],
+    "max_depth": [None, 10, 20],
+    "min_samples_leaf": [None, 10, 20]
 }
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
