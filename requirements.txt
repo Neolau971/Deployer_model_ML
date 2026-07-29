@@ -14,3 +14,4 @@ SQLAlchemy==2.0.51
 joblib==1.5.3
 uuid==1.30
 DateTime==6.0
+pytest-cov==7.1.0

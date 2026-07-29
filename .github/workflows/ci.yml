@@ -31,6 +31,5 @@ jobs:
         run: |
           python -m compileall model/
 
-      - name: Lancer les tests
-        run: |
-          pytest
+      - name: Lancer les tests avec couverture
+        run: pytest --cov=model --cov=db --cov-report=xml:coverage.xml --cov-report=term-missing

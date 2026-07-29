@@ -37,6 +37,9 @@ psycopg==3.3.4
 psycopg-binary==3.3.4
 SQLAlchemy==2.0.51
 joblib==1.5.3
+uuid==1.30
+DateTime==6.0
+pytest-cov==7.1.0
 
 ou sinon via pip install -r requirements.txt
 
@@ -50,6 +53,9 @@ python -m uvicorn model.main:app --reload
 
 ### lancement des tests en local
 python -m pytest -q
+
+### lancement tests avec rapport de couverture
+python -m pytest --cov=model --cov=db --cov-report=term-missing
 
 ### obtenir les lib et leurs version actuellemnt installé dans le projet
 python -m pip freeze     
