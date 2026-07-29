@@ -2,7 +2,7 @@
 
 ## À propos
 
-Ce projet a pour objectif de déployer un modèle de classification pour prévoir les démissions
+Ce projet a pour objectif de déployer un modèle de classification pour prévoir les démissions à partir d'un jeux de donnée
 
 ## Table des matières
 
@@ -18,45 +18,84 @@ Ce projet a pour objectif de déployer un modèle de classification pour prévoi
 
 ## Prérequis
 
-[Liste de tous les éléments nécessaires pour le bon fonctionnement du projet avec description + lien vers la documentation]
+IL faut avoir d'installé sur la machine python, pip et PostgreSQL
 
 ## Installation
 
-[Étapes avec exemples des commandes à lancer pour installer le projet en local]
+Dans le dossier du projet via un terminal installer avec la commande pip install les lib suivante :
+pandas==3.0.3
+matplotlib==3.11.1
+seaborn==0.13.2
+scikit-learn==1.9.0
+shap==0.52.0
+pytest==9.1.1
+fastapi==0.139.2
+uvicorn==0.51.0
+python-multipart==0.0.32
+httpx2==2.7.0
+psycopg==3.3.4
+psycopg-binary==3.3.4
+SQLAlchemy==2.0.51
+joblib==1.5.3
+
+ou sinon via pip install -r requirements.txt
 
 ## Utilisation
 
-[### Sous-titre + description avec exemple des commandes à lancer pour l'ensemble des actions disponibles à l'utilisation dans un mode de développement]
+### entrainer et enregsitrer le model de prévision
+vous rendre sur le fichier model.py dans le dossier model et lancer Run Python File
+
+### déployer le projet sur un serveur local :
+python -m uvicorn model.main:app --reload  
+
+### lancement des tests en local
+python -m pytest -q
+
+### obtenir les lib et leurs version actuellemnt installé dans le projet
+python -m pip freeze     
 
 ## Contribution
 
-[### Sous-titre + description avec exemple des commandes à lancer pour l'ensemble du flux de contribution sur le dépôt]
+Developpeur : N.Ulrick
 
 ## Construit avec
 
 ### Langages & Frameworks
 
-[Liste de tout ce qui permet la confection du projet avec description + lien vers la documentation]
+Le langage python, le gestionnaire Git et gitflow, test écrit avec pytest
 
 ### Outils
 
 #### CI
 
-[Liste de tout ce qui permet l'intégration automatisée du projet avec description + lien vers la documentation et mise en avant des comptes, organisations et variables]
+le fichier local de conf CI se trouve dans le dossier workflows dans .github sous le nom ci.yml
+le fichier est autmatiquement détecté par github
+
+/!\ attention le repository local doit être lié à votre repository distant sur github dans le cas
+contraire il faut les relier via cette commande :
+git remote add origin git@github.com:Username/repository_name.git ( via ssh )
+ou
+git remote add origin https://github.com/Username/repository_name.git ( via http )
 
 #### Déploiement
 
-[Liste de tout ce qui permet le déploiement du projet avec description + lien vers la documentation et mise en avant des comptes, organisations et variables]
+le fichier local de conf CD se trouve dans le dossier workflows dans .github sous le nom deploy_hf
+pour avoir un CD fonctionnel il vous faudra :
+- un compte hugging face
+- HF_TOKEN
+- un space dédier créer sur hugging face 
 
 ## Documentation
 
-[Lien vers documentations externes ou documentation embarquée ici avec table des matières]
+hugging face : https://huggingface.co/
+github : https://github.com/
+swagger : http://127.0.0.1:8000/docs#/default
 
 ## Gestion des versions
 
-Afin de maintenir un cycle de publication claire et de favoriser la rétrocompatibilité, la dénomination des versions suit la spécification décrite par la [Gestion sémantique de version](https://semver.org/lang/fr/)
-
-Les versions disponibles ainsi que les journaux décrivant les changements apportés sont disponibles depuis [la page des Releases][mettre le lien ici].
+la gestion des version des versions et tag sont faite à la main via les commandes suivante :
+git tag -a vX.X.X -m "Release vX.X.X"    
+git push origin vX.X.X   
 
 ## Licence
 
