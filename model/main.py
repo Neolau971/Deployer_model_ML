@@ -3,12 +3,15 @@ from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse
 from io import StringIO
+from datetime import datetime, timezone
+from uuid import uuid4
 import pandas as pd
 import joblib
 from pydantic import ValidationError
 
 from db.createDB import ensure_database
 from db.createTable import save_dataframe_to_db
+from db.readTable import get_predictions_by_request_id
 from model.schemas.employee import EmployeeInput
 
 TARGET_COL = "a_quitte_l_entreprise"
@@ -75,15 +78,91 @@ def predict_with_model(request: Request, data: pd.DataFrame):
     y_proba = model.predict_proba(X)[:, 1]
     y_pred = (y_proba >= 0.5).astype(int)
 
-    return {
-        "predictions": y_pred.tolist()
-    }
+    result_df = pd.DataFrame({
+        "row_id": range(len(data)),
+        "prediction": y_pred,
+        "probability": y_proba
+    })
+
+    return result_df
 
 
-@app.post("/predict")
+@app.post(
+        "/predict",
+    description=(
+        "Le fichier CSV doit contenir une ligne par employé, avec les colonnes qui "
+        "correspondent au modèle `EmployeeInput` (par exemple : `age`, "
+        "`niveau_hierarchique_poste`, `heure_supplementaires`, "
+        "`satisfaction_globale`, `nombre_participation_pee`, "
+        "`a_quitte_l_entreprise`, etc.)."
+    ),
+    responses={
+        200: {
+            "description": "Prédictions générées avec succès",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "request_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "created_at": "2026-07-23T14:00:00Z",
+                        "predictions": [0, 1],
+                        "probabilities": [0.12, 0.87],
+                    }
+                }
+            },
+        },
+        422: {"description": "CSV invalide (lignes non conformes à EmployeeInput)"},
+        500: {"description": "Modèle non chargé"},
+    },
+)
+
 async def predict(request: Request, file: UploadFile = File(...)):
+    request_id = str(uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
+
     data = load_data_from_upload(file)
     ensure_database()
-    save_dataframe_to_db(data)
+    save_dataframe_to_db(data, "data_central")
+
     results = predict_with_model(request, data)
-    return JSONResponse(content=results)
+    results["request_id"] = request_id
+    results["created_at"] = created_at
+
+    save_dataframe_to_db(results, "prediction")
+
+    return JSONResponse(content={
+    "request_id": request_id,
+    "created_at": created_at,
+    "predictions": results["prediction"].tolist(),
+    "probabilities": results["probability"].tolist()
+})
+@app.get(
+        "/predictions/{request_id}",
+            description="Retourne toutes les lignes de prédiction associées à un request_id.",
+             responses={
+        200: {
+            "description": "Prédictions trouvées",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "request_id": "550e8400-e29b-41d4-a716-446655440000",
+                            "row_id": 0,
+                            "prediction": 1,
+                            "probability": 0.87,
+                            "created_at": "2026-07-23T14:00:00Z"
+                        }
+                    ]
+                }
+            }
+        },
+        404: {
+            "description": "Aucune prédiction trouvée"
+        }
+    })
+async def read_predictions(request_id: str):
+    rows = get_predictions_by_request_id(request_id)
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="Aucune prédiction trouvée pour ce request_id")
+
+    return JSONResponse(content=rows)
