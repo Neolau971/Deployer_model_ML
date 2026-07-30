@@ -97,6 +97,9 @@ hugging face : https://huggingface.co/
 github : https://github.com/
 swagger : http://127.0.0.1:8000/docs#/default
 
+### Modèle de données
+Voir le schéma UML des tables : [docs/schema.md](docs/schema.md)
+
 ## Gestion des versions
 
 la gestion des version des versions et tag sont faite à la main via les commandes suivante :
