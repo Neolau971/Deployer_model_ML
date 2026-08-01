@@ -2,8 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class EmployeeInput(BaseModel):
     model_config = ConfigDict(extra="ignore")
-
-    a_quitte_l_entreprise: int = Field(ge=0, le=1)   
+ 
     satisfaction_employee_environnement: float = Field(ge=0)       
     note_evaluation_precedente: float = Field(ge=0)                
     niveau_hierarchique_poste: int = Field(ge=1)                 

@@ -1,4 +1,4 @@
-# [Titre]
+# [Projet de model LM de prédiction des démissions]
 
 ## À propos
 
@@ -48,8 +48,22 @@ ou sinon via pip install -r requirements.txt
 ### entrainer et enregsitrer le model de prévision
 vous rendre sur le fichier model.py dans le dossier model et lancer Run Python File
 
-### déployer le projet sur un serveur local :
+### déployer le projet sur un serveur local 
 python -m uvicorn model.main:app --reload  
+
+### création d'un request_id unique au moment de la création des tables à l'appel du endpoint "/predict"
+### a faire après la création des premières tables via un client PostgreSQL sur la base bdd 
+ALTER TABLE data_central
+    ADD COLUMN id BIGSERIAL PRIMARY KEY;
+
+ALTER TABLE prediction
+    ADD COLUMN id BIGSERIAL PRIMARY KEY;
+
+CREATE INDEX idx_data_central_request_id
+    ON data_central (request_id);
+
+CREATE INDEX idx_prediction_request_id
+    ON prediction (request_id);
 
 ### lancement des tests en local
 python -m pytest -q

@@ -7,7 +7,6 @@ DB_PASSWORD = "admin"
 DB_HOST = "localhost"
 DB_PORT = "5432"
 DB_NAME = "bdd"
-TABLE_NAME = "data_central"
 
 def ensure_database():
     conn = psycopg.connect(

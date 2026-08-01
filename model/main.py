@@ -93,8 +93,7 @@ def predict_with_model(request: Request, data: pd.DataFrame):
         "Le fichier CSV doit contenir une ligne par employé, avec les colonnes qui "
         "correspondent au modèle `EmployeeInput` (par exemple : `age`, "
         "`niveau_hierarchique_poste`, `heure_supplementaires`, "
-        "`satisfaction_globale`, `nombre_participation_pee`, "
-        "`a_quitte_l_entreprise`, etc.)."
+        "`satisfaction_globale`, `nombre_participation_pee`, etc.)."
     ),
     responses={
         200: {
@@ -114,12 +113,14 @@ def predict_with_model(request: Request, data: pd.DataFrame):
         500: {"description": "Modèle non chargé"},
     },
 )
-
 async def predict(request: Request, file: UploadFile = File(...)):
+    # création d'un request_id unique au moment de l'appel de l'endpoint 
+    # request_id présent dans toutes les tables pour la traçabilité
     request_id = str(uuid4())
     created_at = datetime.now(timezone.utc).isoformat()
 
     data = load_data_from_upload(file)
+    data["request_id"] = request_id
     ensure_database()
     save_dataframe_to_db(data, "data_central")
 
@@ -135,6 +136,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
     "predictions": results["prediction"].tolist(),
     "probabilities": results["probability"].tolist()
 })
+
 @app.get(
         "/predictions/{request_id}",
             description="Retourne toutes les lignes de prédiction associées à un request_id.",
